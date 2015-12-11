@@ -46,44 +46,60 @@ void loop() {
             break;
           }
           if (command.startsWith(String("list"))) {
-            client.write("load\n");
+            client.print("temp humid\n");
             cmd_done = true;
           }
           if (command == String("version")) {
-            client.write("munin node at arduino version: 0.1\n");
+            client.print("munin node at arduino version: 0.1\n");
             cmd_done = true;
           }
           
           if (command.startsWith(String("config"))) {
-            if (command.endsWith(String("load"))) {
-              client.write("graph_title Load average\n");
-              client.write("graph_args --base 1000 -l 0\n");
-              client.write("graph_vlabel load\n");
-              client.write("graph_scale no\n");
-              client.write("graph_category system\n");
-              client.write("load.label load\n");
-              client.write("graph_info The load average of the machine describes how many processes are in the run-queue\n");
+            if (command.endsWith(String("temp"))) {
+              client.print("graph_title Temperature\n");
+              client.print("graph_category Sensors\n");
+              client.print("graph_scale no\n");
+              client.print("graph_vlabel degrees Celsius\n");
+              client.print("temp.label DHT22\n");
+              args_done = true;
+            }
+            if (command.endsWith(String("humid"))) {
+              client.print("graph_title Relative humidity\n");
+              client.print("graph_category Sensors\n");
+              client.print("graph_scale no\n");
+              client.print("graph_vlabel %\n");
+              client.print("humid.label DHT22\n");
               args_done = true;
             }
             if (! args_done) {
-              client.write("# Unknown service\n");
+              client.print("# Unknown service\n");
             }
-            client.write(".\n");
+            client.print(".\n");
             cmd_done = true;
           }
           if (command.startsWith(String("fetch"))) {
-            if (command.endsWith(String("load"))) {
-              client.write("load.value 0.10\n");
+            if (command.endsWith(String("temp"))) {
+              byte rand_t = random(20, 30);
+              client.print("temp.value ");
+              client.print(rand_t);
+              client.print('\n');
+              args_done = true;
+            }
+            if (command.endsWith(String("humid"))) {
+              byte rand_h = random(30, 50);
+              client.print("humid.value ");
+              client.print(rand_h);
+              client.print('\n');
               args_done = true;
             }
             if (! args_done) {
-              client.write("# Unknown service\n");
+              client.print("# Unknown service\n");
             }
-            client.write(".\n");
+            client.print(".\n");
             cmd_done = true;
           }
           if (! cmd_done) {
-            client.write("# Unknown command. Try list, config, fetch, version or quit\n");
+            client.print("# Unknown command. Try list, config, fetch, version or quit\n");
           }
         }
       }
