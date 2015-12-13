@@ -7,13 +7,15 @@ IPAddress ip(192,168,1,177);
 
 // Default Munin node port
 EthernetServer server(4949);
-DHT dht(2, DHT11);
+DHT dht11(2, DHT11);
+DHT dht22(3, DHT22);
 boolean cmd_done;
 boolean args_done;
 
 void setup() {
   Serial.begin(9600);
-  dht.begin();
+  dht11.begin();
+  dht22.begin();
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure networking with DHCP");
     Serial.println("Using fallback IP address");
@@ -75,7 +77,8 @@ void loop() {
               client.print("graph_category Sensors\n");
               client.print("graph_scale no\n");
               client.print("graph_vlabel degrees Celsius\n");
-              client.print("temp.label DHT11\n");
+              client.print("temp1.label DHT11\n");
+              client.print("temp2.label DHT22\n");
               args_done = true;
             }
             if (command.endsWith(String("humid"))) {
@@ -83,7 +86,8 @@ void loop() {
               client.print("graph_category Sensors\n");
               client.print("graph_scale no\n");
               client.print("graph_vlabel %\n");
-              client.print("humid.label DHT11\n");
+              client.print("humid1.label DHT11\n");
+              client.print("humid2.label DHT22\n");
               args_done = true;
             }
             if (! args_done) {
@@ -94,30 +98,54 @@ void loop() {
           }
           if (command.startsWith(String("fetch"))) {
             if (command.endsWith(String("temp"))) {
-              float t = dht.readTemperature();
-              client.print("temp.value ");
-              if (isnan(t)) {
+              float temp1 = dht11.readTemperature();
+              float temp2 = dht22.readTemperature();
+              client.print("temp1.value ");
+              if (isnan(temp1)) {
                 client.print("U");
-                Serial.println("Failed to read temperature");
+                Serial.println("DHT11: Failed to read temperature");
               } else {
-                client.print(t);
-                Serial.print("Temperature ");
-                Serial.print(t);
+                client.print(temp1);
+                Serial.print("DHT11: Temperature ");
+                Serial.print(temp1);
+                Serial.println("*C");
+              }
+              client.print("\n");
+              client.print("temp2.value ");
+              if (isnan(temp2)) {
+                client.print("U");
+                Serial.println("DHT22: Failed to read temperature");
+              } else {
+                client.print(temp2);
+                Serial.print("DHT22: Temperature ");
+                Serial.print(temp2);
                 Serial.println("*C");
               }
               client.print('\n');
               args_done = true;
             }
             if (command.endsWith(String("humid"))) {
-              float h = dht.readHumidity();
-              client.print("humid.value ");
-              if (isnan(h)) {
+              float humid1 = dht11.readHumidity();
+              float humid2 = dht22.readHumidity();
+              client.print("humid1.value ");
+              if (isnan(humid1)) {
                 client.print("U");
-                Serial.println("Failed to read relative humidity");
+                Serial.println("DHT11: Failed to read relative humidity");
               } else {
-                client.print(h);
-                Serial.print("Relative humidity ");
-                Serial.print(h);
+                client.print(humid1);
+                Serial.print("DHT11: Relative humidity ");
+                Serial.print(humid1);
+                Serial.println("%");
+              }
+              client.print("\n");
+              client.print("humid2.value ");
+              if (isnan(humid2)) {
+                client.print("U");
+                Serial.println("DHT22: Failed to read relative humidity");
+              } else {
+                client.print(humid2);
+                Serial.print("DHT22: Relative humidity ");
+                Serial.print(humid2);
                 Serial.println("%");
               }
               client.print('\n');
