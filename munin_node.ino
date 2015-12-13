@@ -1,3 +1,4 @@
+#include <DHT.h>
 #include <SPI.h>
 #include <Ethernet.h>
 
@@ -6,12 +7,18 @@ IPAddress ip(192,168,1,177);
 
 // Default Munin node port
 EthernetServer server(4949);
+DHT dht(2, DHT11);
 boolean cmd_done;
 boolean args_done;
 
 void setup() {
   Serial.begin(9600);
-  Ethernet.begin(mac, ip);
+  dht.begin();
+  if (Ethernet.begin(mac) == 0) {
+    Serial.println("Failed to configure networking with DHCP");
+    Serial.println("Using fallback IP address");
+    Ethernet.begin(mac, ip);
+  }
   server.begin();
   Serial.print("Munin node started at ");
   Serial.print(Ethernet.localIP());
@@ -19,11 +26,20 @@ void setup() {
 }
 
 void loop() {
-  server.write("# munin node at arduino\n");
-  delay(1000);
-  EthernetClient client = server.available();
-  if (client) {
+  EthernetClient client;
+  if (server.print("# munin node at arduino\n") > 0) {
     Serial.println("New connection");
+    while (1) {
+      client = server.available();
+      if (client) {
+        break;
+      }
+    }
+  } else {
+      Ethernet.maintain();
+      delay(1000);
+  }
+  if (client) {
     char buffer[128];
     byte pos = 0;
     while (client.connected()) {
@@ -53,14 +69,13 @@ void loop() {
             client.print("munin node at arduino version: 0.1\n");
             cmd_done = true;
           }
-          
           if (command.startsWith(String("config"))) {
             if (command.endsWith(String("temp"))) {
               client.print("graph_title Temperature\n");
               client.print("graph_category Sensors\n");
               client.print("graph_scale no\n");
               client.print("graph_vlabel degrees Celsius\n");
-              client.print("temp.label DHT22\n");
+              client.print("temp.label DHT11\n");
               args_done = true;
             }
             if (command.endsWith(String("humid"))) {
@@ -68,7 +83,7 @@ void loop() {
               client.print("graph_category Sensors\n");
               client.print("graph_scale no\n");
               client.print("graph_vlabel %\n");
-              client.print("humid.label DHT22\n");
+              client.print("humid.label DHT11\n");
               args_done = true;
             }
             if (! args_done) {
@@ -79,16 +94,32 @@ void loop() {
           }
           if (command.startsWith(String("fetch"))) {
             if (command.endsWith(String("temp"))) {
-              byte rand_t = random(20, 30);
+              float t = dht.readTemperature();
               client.print("temp.value ");
-              client.print(rand_t);
+              if (isnan(t)) {
+                client.print("U");
+                Serial.println("Failed to read temperature");
+              } else {
+                client.print(t);
+                Serial.print("Temperature ");
+                Serial.print(t);
+                Serial.println("*C");
+              }
               client.print('\n');
               args_done = true;
             }
             if (command.endsWith(String("humid"))) {
-              byte rand_h = random(30, 50);
+              float h = dht.readHumidity();
               client.print("humid.value ");
-              client.print(rand_h);
+              if (isnan(h)) {
+                client.print("U");
+                Serial.println("Failed to read relative humidity");
+              } else {
+                client.print(h);
+                Serial.print("Relative humidity ");
+                Serial.print(h);
+                Serial.println("%");
+              }
               client.print('\n');
               args_done = true;
             }
