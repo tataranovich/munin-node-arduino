@@ -1,6 +1,9 @@
+#include <ApplicationMonitor.h>
 #include <DHT.h>
 #include <SPI.h>
 #include <Ethernet.h>
+
+Watchdog::CApplicationMonitor ApplicationMonitor;
 
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 IPAddress ip(192,168,1,177);
@@ -14,6 +17,8 @@ boolean args_done;
 
 void setup() {
   Serial.begin(9600);
+  ApplicationMonitor.Dump(Serial);
+  ApplicationMonitor.EnableWatchdog(Watchdog::CApplicationMonitor::Timeout_4s);
   dht11.begin();
   dht22.begin();
   if (Ethernet.begin(mac) == 0) {
@@ -28,16 +33,19 @@ void setup() {
 }
 
 void loop() {
+  ApplicationMonitor.IAmAlive();
   EthernetClient client;
   if (server.print("# munin node at arduino\n") > 0) {
     Serial.println("New connection");
     while (1) {
+      ApplicationMonitor.IAmAlive();
       client = server.available();
       if (client) {
         break;
       }
     }
   } else {
+      ApplicationMonitor.IAmAlive();
       Ethernet.maintain();
       delay(1000);
   }
@@ -45,6 +53,7 @@ void loop() {
     char buffer[128];
     byte pos = 0;
     while (client.connected()) {
+      ApplicationMonitor.IAmAlive();
       if (client.available()) {        
         char c = client.read();
         if (c != '\n') {
