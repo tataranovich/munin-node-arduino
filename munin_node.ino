@@ -21,11 +21,7 @@ void setup() {
   ApplicationMonitor.EnableWatchdog(Watchdog::CApplicationMonitor::Timeout_4s);
   dht11.begin();
   dht22.begin();
-  if (Ethernet.begin(mac) == 0) {
-    Serial.println("Failed to configure networking with DHCP");
-    Serial.println("Using fallback IP address");
-    Ethernet.begin(mac, ip);
-  }
+  Ethernet.begin(mac, ip);
   server.begin();
   Serial.print("Munin node started at ");
   Serial.print(Ethernet.localIP());
@@ -46,7 +42,6 @@ void loop() {
     }
   } else {
       ApplicationMonitor.IAmAlive();
-      Ethernet.maintain();
       delay(1000);
   }
   if (client) {
