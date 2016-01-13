@@ -7,6 +7,7 @@ IPAddress ip(192,168,1,177);
 
 // Default Munin node port
 EthernetServer server(4949);
+EthernetClient client;
 
 #define SENSORS_MAX 5
 
@@ -34,13 +35,15 @@ void setup() {
 }
 
 void loop() {
-  EthernetClient client;
   if (server.print("# munin node at arduino\n") > 0) {
+    // Client connected, wait data from client for 10s
     Serial.println("New connection");
-    while (1) {
+    for (int i = 0; i < 100; i++) {
       client = server.available();
       if (client) {
         break;
+      } else {
+        delay(100);
       }
     }
   } else {
